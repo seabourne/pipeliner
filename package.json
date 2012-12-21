@@ -1,0 +1,19 @@
+{
+  "name": "pipeliner",
+  "version": "0.0.0",
+  "description": "A job pipelining framework",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --compilers coffee:coffee-script -R spec test/*"
+  },
+  "repository": "",
+  "author": "Mike Reich",
+  "license": "BSD",
+  "dependencies": {
+    "mongoose": "~3.5.2",
+    "coffee-script": "~1.4.0",
+    "node-uuid": "~1.4.0",
+    "mocha": "~1.7.4",
+    "should": "~1.2.1"
+  }
+}
