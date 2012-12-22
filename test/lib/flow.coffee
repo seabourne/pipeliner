@@ -8,6 +8,24 @@ Flow = pipeliner.Flow
 Job = pipeliner.Job
 Module = pipeliner.Module
 
+inputData = 
+	title: 'Some Title'
+
+class Input extends Module
+	processData: () ->
+		this.done(inputData)
+
+	start: () ->
+		this.process()
+
+class UpcaseProcessor extends Module
+	processData: (data) ->
+		data.title = data.title.toUpperCase()
+		this.done(data)
+
+
+flow = input = processor = null
+
 describe "Flow", () ->
 	flw = null
 	mod = null
@@ -118,9 +136,9 @@ describe "Flow", () ->
 		it "should save a job with the correct data", (done) ->
 			mod = new Module
 			data = 'some data'
-			mod.process = () ->
-				this.trigger 'complete', data, this
-			mod.on 'complete', flw.handleComplete, flw
+			mod.processData = () ->
+				this.done data
+			flw.addModule(mod)
 			mod.process()
 			Job.findOne moduleId: mod.get('id'), (err, res) ->
 				should.exist res
@@ -130,9 +148,9 @@ describe "Flow", () ->
 		it "should mark the job as complete", (done) ->
 			mod = new Module
 			data = 'some data'
-			mod.process = () ->
-				this.trigger 'complete', data, this
-			mod.on 'complete', flw.handleComplete, flw
+			mod.processData = () ->
+				this.done data
+			flw.addModule(mod)
 			mod.process()
 			Job.findOne moduleId: mod.get('id'), (err, res) ->
 				should.exist res
@@ -144,9 +162,9 @@ describe "Flow", () ->
 			mod = new Module
 			data = 'some bad data'
 			error = new Error 'something went wrong'
-			mod.process = () ->
-				this.trigger 'error', error, data, this
-			mod.on 'error', flw.handleError, flw
+			mod.processData = () ->
+				this.fail error, data
+			flw.addModule(mod)
 			mod.process()
 			Job.findOne moduleId: mod.get('id'), (err, res) ->
 				should.exist res
@@ -157,11 +175,56 @@ describe "Flow", () ->
 			mod = new Module
 			data = 'some bad data'
 			error = new Error 'something went wrong'
-			mod.process = () ->
-				this.trigger 'error', error, data, this
-			mod.on 'error', flw.handleError, flw
+			mod.processData = () ->
+				this.fail error, data
+			flw.addModule(mod)
 			mod.process()
 			Job.findOne moduleId: mod.get('id'), (err, res) ->
 				should.exist res
 				res.should.have.property 'complete', false
 				done()		
+
+	describe "getLastRun", () ->
+		it "should return the last set of results", (done) ->
+			input = new Input
+			processor = new UpcaseProcessor
+
+			flw.addModule input 
+			flw.addModule processor 	
+			
+			input.doNext processor	
+
+			flw.start()		
+
+			setTimeout () ->
+				flw.getLastRun (rslts) ->
+					rslts.length.should.eql(2)
+					rslts[0].should.have.property('moduleId', input.get('id'))
+					rslts[1].should.have.property('moduleId', processor.get('id'))
+					done()
+			, 500
+
+
+	describe "getLastError", () ->
+		it "should return the last result that generated an error", (done) ->
+			input = new Input
+			processor = new UpcaseProcessor
+			error = 'failure generated'
+			processor.processData = (data) ->
+				data.title = data.title.toUpperCase()
+				this.fail(error, data)
+
+			flw.addModule input 
+			flw.addModule processor 	
+			
+			input.doNext processor	
+
+			flw.start()		
+
+			setTimeout () ->
+				flw.getLastError (rslt) ->
+					should.exist(rslt)
+					rslt.should.have.property('error', error)
+					rslt.should.have.property('complete', false)
+					done()
+			, 500

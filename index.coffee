@@ -1,5 +1,7 @@
 mongoose = require('mongoose')
 
+Setting = require './lib/models/setting'
+
 config = {}
 
 exports.Flow = Flow = require './lib/flow'
@@ -22,3 +24,9 @@ exports.getFlow = (id, callback) ->
 
 exports.setConfig = setConfig
 
+exports.set = (name, value) ->
+	Setting.create {name: name, value: value}, () ->
+
+exports.get = (name, callback) ->
+	Setting.findOne {name: name}, (err, obj) ->
+		return callback(obj)

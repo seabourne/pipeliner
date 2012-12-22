@@ -29,16 +29,17 @@ class Flow extends Object
 		return self._modules[id] if self._modules[id]?
 		return null
 
-	handleComplete: (data, module) ->
+	handleComplete: (data, runId, module) ->
 		self = this
 		job = 
 			flowId: self.get('id')
 			moduleId: module.get('id')
 			data: data
 			complete: true
+			runId: runId
 		self.createJob(job)
 
-	handleError: (error, data, module) ->
+	handleError: (error, data, runId, module) ->
 		self = this
 		job = 
 			flowId: self.get('id')
@@ -53,6 +54,21 @@ class Flow extends Object
 		throw new Error "Must include a module id" if not job.moduleId?
 		#Job.update({}, job, {upsert: true}).exec()
 		Job.create job, () ->
+
+	getLastRun: (callback) ->
+		Job.aggregate(
+			{ $group: { _id: null, val: { $max: '$runId' }}}, 
+    		{ $project: { _id: 0, val: 1 }},
+    		(err, res) ->
+    			Job.find runId: res[0].val, (err, jobs) ->
+    				callback jobs	
+    	)
+
+	getLastError: (callback) ->
+    	Job.findOne(complete: false)
+    	.sort('-createdOn')
+    	.exec (err, rslt) ->
+    		callback rslt
 
 
 module.exports = Flow

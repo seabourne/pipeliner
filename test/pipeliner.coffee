@@ -12,14 +12,17 @@ inputData =
 	title: 'Some Title'
 
 class Input extends Module
-	process: () ->
-		this.trigger 'complete', inputData, this
+	processData: () ->
+		this.done(inputData)
 
+	start: () ->
+		this.process()
 
 class UpcaseProcessor extends Module
-	process: (data) ->
+	processData: (data) ->
 		data.title = data.title.toUpperCase()
-		this.trigger 'complete', data, this
+		this.done(data)
+
 
 flow = input = processor = null
 
@@ -33,15 +36,15 @@ describe "Pipeliner", () ->
 			input = new Input
 			processor = new UpcaseProcessor
 
+			flow.addModule input 
+			flow.addModule processor 	
+			
+			input.doNext processor
+
 			processor.on 'complete', (data) ->
 				done()
 
-			flow.addModule(input)
-			flow.addModule(processor)	
-			
-			input.on 'complete', processor.process, processor
-
-			input.process()
+			flow.start()
 
 		it "should work", (done) ->
 			Job.findOne moduleId: processor.get('id'), (err, job) ->
