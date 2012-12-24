@@ -77,6 +77,16 @@ describe "Flow", () ->
 			flw.addModule(mod)
 			mod.process()		
 
+	describe "addModules", () ->
+		it "should add the array of modules", () ->
+			mod = new Module
+			mod2 = new Module
+			flw.addModules [mod, mod2]
+			should.exist(flw._modules[mod.get('id')])
+			should.exist(flw._modules[mod2.get('id')])
+			flw._modules[mod.get('id')].should.eql(mod)
+			flw._modules[mod2.get('id')].should.eql(mod2)
+
 	describe "getModuleById", () ->
 		it "should return the module that was created", () ->
 			mod = new Module

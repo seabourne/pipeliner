@@ -16,6 +16,11 @@ class Flow extends Object
 		for id, module of self._modules
 			module.stop()
 
+	addModules: (modules) ->
+		self = this
+		for module in modules
+			self.addModule module
+
 	addModule: (module) ->
 		self = this
 		throw new Error("Module must have an id") if not module.get? or not module.get('id')?
