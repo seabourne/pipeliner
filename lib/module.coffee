@@ -28,5 +28,6 @@ class Module extends Object
 	doNext: (context) ->
 		self = this
 		self.on 'complete', context.process, context
+		return context
 
 module.exports = Module	
