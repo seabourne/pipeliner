@@ -2,59 +2,50 @@ Object = require './object'
 
 class Flow extends Object
 	constructor: (@config) ->
-		self = this
 		super(@config)
-		self._modules = {}
+		@_modules = {}
 
 	start: () ->
-		self = this
-		for id, module of self._modules
+		for id, module of @_modules
 			module.start()
 
 	stop: () ->
-		self = this
-		for id, module of self._modules
+		for id, module of @_modules
 			module.stop()
 
 	addModules: (modules) ->
-		self = this
 		for module in modules
-			self.addModule module
+			@addModule module
 
 	addModule: (module) ->
-		self = this
 		throw new Error("Module must have an id") if not module.get? or not module.get('id')?
-		self._modules[module.get('id')] = module
-		module.on 'complete', self.handleComplete, self
-		module.on 'error', self.handleError, self
+		@_modules[module.get('id')] = module
+		module.on 'complete', @handleComplete, @
+		module.on 'error', @handleError, @
 
 	getModuleById: (id) ->
-		self = this
-		return self._modules[id] if self._modules[id]?
+		return @_modules[id] if @_modules[id]?
 		return null
 
 	handleComplete: (data, runId, module) ->
-		self = this
 		job = 
-			flowId: self.get('id')
+			flowId: @get('id')
 			moduleId: module.get('id')
 			data: data
 			complete: true
 			runId: runId
-		self.createJob(job)
+		@createJob(job)
 
 	handleError: (error, data, runId, module) ->
-		self = this
 		job = 
-			flowId: self.get('id')
+			flowId: @get('id')
 			moduleId: module.get('id')
 			data: data
 			error: error.toString()
 			complete: false
-		self.createJob(job)
+		@createJob(job)
 		
 	createJob: (job) ->
-		self = this
 		throw new Error "Must include a flow id" if not job.flowId?
 		throw new Error "Must include a module id" if not job.moduleId?
 		#Job.update({}, job, {upsert: true}).exec()
@@ -62,7 +53,6 @@ class Flow extends Object
 		Job.create job, () ->
 
 	getLastRun: (callback) ->
-		self = this
 		Job = require('./models/job')(Flow::connection)
 		Job.aggregate(
 			{ $group: { _id: null, val: { $max: '$runId' }}}, 
@@ -73,7 +63,6 @@ class Flow extends Object
     	)
 
 	getLastError: (callback) ->
-		self = this
 		Job = require('./models/job')(Flow::connection)
 		Job.findOne(complete: false)
 		.sort('-createdOn')

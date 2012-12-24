@@ -4,38 +4,32 @@ uuid = require 'node-uuid'
 
 class Module extends Object
 	constructor: (config, func) ->
-		self = this
-		
 		if typeof config is 'function'
-			self.processData = config
+			@processData = config
 		else
-			self.processData = func if func?
+			@processData = func if func?
 			super config
 	
 	process: (data, jobId, previous) ->
 		@jobId = jobId
-		self = this
-		self.processData(data)
+		@processData(data)
 
 	start: () ->
 
 	stop: () ->	
 
 	done: (data) ->
-		self = this
 		if not @jobId?
 			jobId = uuid.v4()
 		else
 			jobId = @jobId
-		self.trigger 'complete', data, jobId, self
+		@trigger 'complete', data, jobId, @
 
 	fail: (reason, data) ->
-		self = this
-		self.trigger 'error', reason, data, @jobId, self
+		@trigger 'error', reason, data, @jobId, @
 
 	doNext: (context) ->
-		self = this
-		self.on 'complete', context.process, context
+		@on 'complete', context.process, context
 		return context
 
 module.exports = Module	
