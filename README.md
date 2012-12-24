@@ -17,22 +17,20 @@ pipeliner = require 'pipeliner'
 flow = new pipeliner.Flow
 input = new pipeliner.Module
 input.processData = () ->
-	# generate data
+	# generate your data here
 	this.done(data)
 
 processor = new pipeliner.Module
 processor.processData = (data) ->
-	# do somethign to the data
+	# do something to the data
 	this.done(data)
 
 output = new pipeliner.Module
 output.processData = (data) ->
-	# publish the data
+	# publish the data somehow
 	this.done(data)
 
-flow.addModule(input)
-flow.addModule(processor)
-flow.addModule(output)
+flow.addModules([input, processor, output])
 
 input.doNext(processor).doNext(output)
 
