@@ -1,9 +1,10 @@
 Object = require "./object"
 
+uuid = require 'node-uuid'
+
 class Module extends Object
 	
 	process: (data, jobId, previous) ->
-		jobId = (new Date()).getTime() if not jobId?
 		@jobId = jobId
 		self = this
 		self.processData(data)
@@ -14,7 +15,11 @@ class Module extends Object
 
 	done: (data) ->
 		self = this
-		self.trigger 'complete', data, @jobId, self
+		if not @jobId?
+			jobId = uuid.v4()
+		else
+			jobId = @jobId
+		self.trigger 'complete', data, jobId, self
 
 	fail: (reason, data) ->
 		self = this

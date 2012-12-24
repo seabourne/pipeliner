@@ -2,31 +2,31 @@ mongoose = require('mongoose')
 
 Setting = require './lib/models/setting'
 
-config = {}
+class Pipeliner
+	constructor: (config)->
+		self = this
+		self.config = if config then config else {db: 'mongodb://localhost/pipeliner'}
 
-exports.Flow = Flow = require './lib/flow'
-exports.Module = Module = require './lib/module'
-exports.Job = Job = require './lib/models/job'
+		self.setup()
 
-setConfig = (config) ->
-	return false if not config.db?
-	mongoose.connection.on 'error', console.error.bind console, 'connection error:'
-	mongoose.connect config.db
+	setConfig: (config) ->
+		self = this
+		self.config = config
+		self.setup()
 
-exports.createFlow = (config, callback) ->
-	flow = new Flow(config)
-	return callback(flow)
+	setup: () ->
+		self = this
+		self.connection = mongoose.createConnection self.config.db
+		self.connection.on 'error', (error) ->
+			console.log 'error occured'
+			console.log error
 
-exports.getFlow = (id, callback) ->
-	Flow.findById id, (err, flw) ->
-		flow = new Flow(flw) if flw
-		callback(err, flow)
+		self.Flow = require './lib/flow'
+		self.Module = require './lib/module'
+		self.Job = 
 
-exports.setConfig = setConfig
+		self.Flow::connection = self.connection
+		self.Module::connection = self.connection
+		self.Job = require('./lib/models/job')(self.connection)
 
-exports.set = (name, value) ->
-	Setting.create {name: name, value: value}, () ->
-
-exports.get = (name, callback) ->
-	Setting.findOne {name: name}, (err, obj) ->
-		return callback(obj)
+module.exports = new Pipeliner

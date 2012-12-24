@@ -1,5 +1,4 @@
 Object = require './object'
-Job = require './models/job'
 
 class Flow extends Object
 	constructor: (@config) ->
@@ -50,12 +49,16 @@ class Flow extends Object
 		self.createJob(job)
 		
 	createJob: (job) ->
+		self = this
 		throw new Error "Must include a flow id" if not job.flowId?
 		throw new Error "Must include a module id" if not job.moduleId?
 		#Job.update({}, job, {upsert: true}).exec()
+		Job = require('./models/job')(Flow::connection)
 		Job.create job, () ->
 
 	getLastRun: (callback) ->
+		self = this
+		Job = require('./models/job')(Flow::connection)
 		Job.aggregate(
 			{ $group: { _id: null, val: { $max: '$runId' }}}, 
     		{ $project: { _id: 0, val: 1 }},
@@ -65,10 +68,12 @@ class Flow extends Object
     	)
 
 	getLastError: (callback) ->
-    	Job.findOne(complete: false)
-    	.sort('-createdOn')
-    	.exec (err, rslt) ->
-    		callback rslt
+		self = this
+		Job = require('./models/job')(Flow::connection)
+		Job.findOne(complete: false)
+		.sort('-createdOn')
+		.exec (err, rslt) ->
+			callback rslt
 
 
 module.exports = Flow
