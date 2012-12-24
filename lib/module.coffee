@@ -3,6 +3,14 @@ Object = require "./object"
 uuid = require 'node-uuid'
 
 class Module extends Object
+	constructor: (config, func) ->
+		self = this
+		
+		if typeof config is 'function'
+			self.processData = config
+		else
+			self.processData = func if func?
+			super config
 	
 	process: (data, jobId, previous) ->
 		@jobId = jobId
