@@ -15,18 +15,15 @@ Pipeliner is designed to create information 'flows', a combination of inputs, pr
 pipeliner = require 'pipeliner'
 
 flow = new pipeliner.Flow
-input = new pipeliner.Module
-input.processData = () ->
+input = new pipeliner.Module () ->
 	# generate your data here
 	this.done(data)
 
-processor = new pipeliner.Module
-processor.processData = (data) ->
+processor = new pipeliner.Module (data) ->
 	# do something to the data
 	this.done(data)
 
-output = new pipeliner.Module
-output.processData = (data) ->
+output = new pipeliner.Module (data) ->
 	# publish the data somehow
 	this.done(data)
 
