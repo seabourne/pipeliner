@@ -1,4 +1,5 @@
 uuid = require 'node-uuid'
+cloneextend = require 'cloneextend'   
 
 class Object
 	constructor: (@config) ->
@@ -32,5 +33,9 @@ class Object
 			if event.callback != callback and event.context != context
 				newEvents.push event				
 		@_events[e] = newEvents	
+
+	clone: (obj) ->
+		return cloneextend.clone(obj)
+
 
 module.exports = Object		
