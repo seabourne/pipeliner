@@ -10,9 +10,10 @@ class Module extends Object
 			@processData = func if func?
 			super config
 	
-	process: (data, jobId, previous) ->
+	process: (data, jobId, order, previous) ->
 		@jobId = jobId
-		@processData(data)
+		@order = order
+		@processData @clone(data)
 
 	start: () ->
 
@@ -23,7 +24,12 @@ class Module extends Object
 			jobId = uuid.v4()
 		else
 			jobId = @jobId
-		@trigger 'complete', data, jobId, @
+
+		if not @order?
+			order = 0
+		else
+			order = @order+1
+		@trigger 'complete', data, jobId, order, @
 
 	fail: (reason, data) ->
 		@trigger 'error', reason, data, @jobId, @

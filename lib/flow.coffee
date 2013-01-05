@@ -27,13 +27,14 @@ class Flow extends Object
 		return @_modules[id] if @_modules[id]?
 		return null
 
-	handleComplete: (data, runId, module) ->
+	handleComplete: (data, runId, order, module) ->
 		job = 
 			flowId: @get('id')
 			moduleId: module.get('id')
 			data: data
 			complete: true
 			runId: runId
+			order: order
 		@createJob(job)
 
 	handleError: (error, data, runId, module) ->
@@ -54,13 +55,9 @@ class Flow extends Object
 
 	getLastRun: (callback) ->
 		Job = require('./models/job')(Flow::connection)
-		Job.aggregate(
-			{ $group: { _id: null, val: { $max: '$runId' }}}, 
-    		{ $project: { _id: 0, val: 1 }},
-    		(err, res) ->
-    			Job.find runId: res[0].val, (err, jobs) ->
-    				callback jobs	
-    	)
+		Job.findOne({}).sort("-createdOn").exec (err, res) ->
+			Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
+				callback jobs
 
 	getLastError: (callback) ->
 		Job = require('./models/job')(Flow::connection)
