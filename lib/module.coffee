@@ -32,7 +32,17 @@ class Module extends Object
 		@trigger 'complete', data, jobId, order, @
 
 	fail: (reason, data) ->
-		@trigger 'error', reason, data, @jobId, @
+		if not @jobId?
+			jobId = uuid.v4()
+		else
+			jobId = @jobId
+
+		if not @order?
+			order = 0
+		else
+			order = @order+1
+
+		@trigger 'error', reason, data, jobId, order, @
 
 	doNext: (context) ->
 		@on 'complete', context.process, context

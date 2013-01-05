@@ -37,13 +37,15 @@ class Flow extends Object
 			order: order
 		@createJob(job)
 
-	handleError: (error, data, runId, module) ->
+	handleError: (error, data, runId, order, module) ->
 		job = 
 			flowId: @get('id')
 			moduleId: module.get('id')
 			data: data
 			error: error.toString()
 			complete: false
+			runId: runId
+			order: order
 		@createJob(job)
 		
 	createJob: (job) ->
@@ -61,10 +63,9 @@ class Flow extends Object
 
 	getLastError: (callback) ->
 		Job = require('./models/job')(Flow::connection)
-		Job.findOne(complete: false)
-		.sort('-createdOn')
-		.exec (err, rslt) ->
-			callback rslt
+		Job.findOne({complete: false}).sort("-createdOn").exec (err, res) ->
+			Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
+				callback jobs
 
 
 module.exports = Flow
