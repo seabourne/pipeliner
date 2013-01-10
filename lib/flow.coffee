@@ -47,6 +47,7 @@ class Flow extends Object
 			runId: runId
 			order: order
 		@createJob(job)
+
 		
 	createJob: (job) ->
 		throw new Error "Must include a flow id" if not job.flowId?
@@ -57,8 +58,24 @@ class Flow extends Object
 
 	getLastRun: (callback) ->
 		Job = require('./models/job')(Flow::connection)
-		Job.findOne({}).sort("-createdOn").exec (err, res) ->
+		Job.findOne({flowId: @get('id')}).sort("-createdOn").exec (err, res) ->
+			return callback [] if not res
 			Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
+				callback jobs
+
+	getLastRuns: (runs, callback) ->
+		if typeof runs is 'function'
+			callback = runs
+			runs = 5	
+		Job = require('./models/job')(Flow::connection)
+		Job.find({flowId: @get('id')}).sort("runId").exec (err, res) ->
+			return callback [] if res.length is 0
+			runIds = []
+			for run in res
+				runIds.push run.runId if runIds.indexOf(run.runId) == -1 
+				break if runIds.length == 5
+
+			Job.find({runId: {$in: runIds}}).sort('runId order').exec (err, jobs) ->
 				callback jobs
 
 	getLastError: (callback) ->
