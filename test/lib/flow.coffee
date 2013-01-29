@@ -8,7 +8,7 @@ Flow = pipeliner.Flow
 Job = pipeliner.Job
 Module = pipeliner.Module
 
-inputData = 
+inputData =
 	title: 'Some Title'
 
 class Input extends Module
@@ -35,7 +35,7 @@ describe "Flow", () ->
 	beforeEach () ->
 		Job.remove({}).exec()
 		flw = new Flow()
-		
+
 	describe "Constructor", () ->
 		it "should initialize the internal _modules hash", () ->
 			flw._modules.should.eql({})
@@ -49,33 +49,33 @@ describe "Flow", () ->
 
 		it "should throw a warning if the passed object doesnt have an id", () ->
 			mod = {}
-			(() -> 
+			(() ->
 			  flw.addModule(mod)
 			).should.throw()
 
 		it "should bind handleComplete to the complete event", (done) ->
 			mod = new Module
-			
+
 			mod.process = () ->
 				this.trigger 'complete', done
-			
+
 			flw.handleComplete = (done) ->
 				done()
 
 			flw.addModule(mod)
-			mod.process()			
+			mod.process()
 
 		it "should bind handleError to the error event", (done) ->
 			mod = new Module
-			
+
 			mod.process = () ->
 				this.trigger 'error', done
-			
+
 			flw.handleError = (done) ->
 				done()
 
 			flw.addModule(mod)
-			mod.process()		
+			mod.process()
 
 	describe "addModules", () ->
 		it "should add the array of modules", () ->
@@ -94,7 +94,7 @@ describe "Flow", () ->
 			flw.getModuleById(mod.get('id')).should.eql(mod)
 
 		it "should return null if no id is passed", () ->
-			should.not.exist(flw.getModuleById())	
+			should.not.exist(flw.getModuleById())
 
 	describe "start", () ->
 		it "should call start for each module", (done) ->
@@ -114,33 +114,34 @@ describe "Flow", () ->
 	describe "createJob", () ->
 		it "should create a new job", (done) ->
 			mod = new Module
-			job = 
+			job =
 				moduleId: mod.get('id')
 				flowId: flw.get('id')
 				data: 'some data'
 			flw.createJob job
 			Job.findOne moduleId: mod.get('id'), (err, res) ->
+				console.log err
 				should.exist res
 				res.should.have.property 'moduleId', mod.get('id')
 				done()
 
 		it "should throw an error if the flowId is missing", () ->
 			mod = new Module
-			job = 
+			job =
 				moduleId: mod.get('id')
 				data: 'some data'
-			(() -> 
+			(() ->
 				flw.createJob job
 			).should.throw(/flow id/)
 
 		it "should throw an error if the moduleId is missing", () ->
 			mod = new Module
-			job = 
+			job =
 				flowId: flw.get('id')
 				data: 'some data'
-			(() -> 
+			(() ->
 				flw.createJob job
-			).should.throw(/module id/)	
+			).should.throw(/module id/)
 
 	describe "handleComplete", () ->
 		it "should save a job with the correct data", (done) ->
@@ -167,8 +168,8 @@ describe "Flow", () ->
 				res.should.have.property 'complete', true
 				done()
 
-	describe "handleFailure", () ->	
-		it "should save a job with the current error", (done) ->	
+	describe "handleFailure", () ->
+		it "should save a job with the current error", (done) ->
 			mod = new Module
 			data = 'some bad data'
 			error = new Error 'something went wrong'
@@ -192,19 +193,19 @@ describe "Flow", () ->
 			Job.findOne moduleId: mod.get('id'), (err, res) ->
 				should.exist res
 				res.should.have.property 'complete', false
-				done()		
+				done()
 
 	describe "getLastRun", () ->
 		it "should return the last set of results", (done) ->
 			input = new Input
 			processor = new UpcaseProcessor
 
-			flw.addModule input 
-			flw.addModule processor 	
-			
-			input.doNext processor	
+			flw.addModule input
+			flw.addModule processor
 
-			flw.start()		
+			input.doNext processor
+
+			flw.start()
 
 			setTimeout () ->
 				flw.getLastRun (rslts) ->
@@ -224,12 +225,12 @@ describe "Flow", () ->
 				data.title = data.title.toUpperCase()
 				this.fail(error, data)
 
-			flw.addModule input 
-			flw.addModule processor 	
-			
-			input.doNext processor	
+			flw.addModule input
+			flw.addModule processor
 
-			flw.start()		
+			input.doNext processor
+
+			flw.start()
 
 			setTimeout () ->
 				flw.getLastError (rslt) ->

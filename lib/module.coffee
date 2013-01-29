@@ -9,32 +9,32 @@ class Module extends Object
 		else
 			@processData = func if func?
 			super config
-	
+
 	process: (data, jobId, order, previous) ->
-		done = (data) =>
+		@done = (data) =>
 			newId = if not jobId then uuid.v4() else jobId
 			if not order or order < 1
-				order = 0 
+				order = 0
 
 			newOrder = order+1
-				
+
 			@trigger 'complete', data, newId, newOrder, @
 
-		fail = (error, data) =>
+		@fail = (error, data) =>
 			newId = if not jobId then uuid.v4() else jobId
 
 			newOrder = if not order then 0 else (order+1)
-			
+
 			@trigger 'error', error, data, newId, newOrder, @
 
-		@processData @clone(data), done, fail
+		@processData @clone(data), @done, @fail
 
 	start: () ->
 
-	stop: () ->					
+	stop: () ->
 
 	doNext: (context) ->
 		@on 'complete', context.process, context
 		return context
 
-module.exports = Module	
+module.exports = Module

@@ -8,7 +8,7 @@ Flow = pipeliner.Flow
 Job = pipeliner.Job
 Module = pipeliner.Module
 
-inputData = 
+inputData =
 	title: 'Some Title'
 
 class Input extends Module
@@ -36,9 +36,9 @@ describe "Pipeliner", () ->
 			input = new Input
 			processor = new UpcaseProcessor
 
-			flow.addModule input 
-			flow.addModule processor 	
-			
+			flow.addModule input
+			flow.addModule processor
+
 			input.doNext processor
 
 			processor.on 'complete', (data) ->
@@ -51,4 +51,3 @@ describe "Pipeliner", () ->
 				should.exist(job)
 				job.data.title.should.eql inputData.title.toUpperCase()
 				done()
-
