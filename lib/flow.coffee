@@ -78,9 +78,19 @@ class Flow extends Object
 			Job.find({runId: {$in: runIds}}).sort('runId order').exec (err, jobs) ->
 				callback jobs
 
+	getError: (errorId, callback) ->
+		Job = require('./models/job')(Flow::connection)
+		Job.findById(errorId).exec (err, job) ->
+			callback job			
+
+	getErrors: (callback) ->
+		Job = require('./models/job')(Flow::connection)
+		Job.find({flowId: @get('id'), complete: false}).sort("-createdOn").exec (err, jobs) ->
+			callback jobs			
+
 	getLastError: (callback) ->
 		Job = require('./models/job')(Flow::connection)
-		Job.findOne({complete: false}).sort("-createdOn").exec (err, res) ->
+		Job.findOne({flowId: @get('id'), complete: false}).sort("-createdOn").exec (err, res) ->
 			Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
 				callback jobs
 
