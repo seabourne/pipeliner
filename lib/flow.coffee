@@ -47,6 +47,7 @@ class Flow extends Object
 			runId: runId
 			order: order
 		@createJob(job)
+		@trigger 'error', error, data, runId, order, module
 
 		
 	createJob: (job) ->
@@ -69,7 +70,7 @@ class Flow extends Object
 			runs = 5	
 		Job = require('./models/job')(Flow::connection)
 		Job.find({flowId: @get('id')}).sort("runId").exec (err, res) ->
-			return callback [] if res.length is 0
+			return callback [] if not res or res.length is 0
 			runIds = []
 			for run in res
 				runIds.push run.runId if runIds.indexOf(run.runId) == -1 

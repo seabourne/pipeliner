@@ -16,6 +16,7 @@ class Object
 		return @config[name] = value
 
 	on: (event, callback, context) ->
+		throw new Error 'Must supply a callback' if not callback
 		context ?= @
 		@_events[event] ?= [] 
 		@_events[event].push {callback: callback, context: context}

@@ -27,7 +27,10 @@ class Module extends Object
 			
 			@trigger 'error', error, data, newId, newOrder, @
 
-		@processData @clone(data), done, fail
+		try
+			@processData @clone(data), done, fail
+		catch e 
+			fail "Error processing module: "+e
 
 	start: () ->
 
