@@ -10,8 +10,14 @@ class Flow extends Object
 			module.start()
 
 	stop: () ->
+		@running = false
 		for id, module of @_modules
 			module.stop()
+
+	run: () ->
+		@running = true
+		for id, module of @_modules
+			module.run() if module.type() is 'input'
 
 	addModules: (modules) ->
 		for module in modules
@@ -22,6 +28,7 @@ class Flow extends Object
 		@_modules[module.get('id')] = module
 		module.on 'complete', @handleComplete, @
 		module.on 'error', @handleError, @
+		module.flow = @
 
 	getModuleById: (id) ->
 		return @_modules[id] if @_modules[id]?
@@ -34,8 +41,8 @@ class Flow extends Object
 			data: data
 			complete: true
 			runId: runId
-			order: order
-		@createJob(job)
+			order: order	
+		@createJob(job) if @testing
 
 	handleError: (error, data, runId, order, module) ->
 		job = 
@@ -64,13 +71,20 @@ class Flow extends Object
 			Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
 				callback jobs
 
+	getRun: (id, callback) ->	
+		Job = require('./models/job')(Flow::connection)
+		Job.find({runId: id}).sort("order").exec (err, jobs) ->
+			callback jobs
+
 	getLastRuns: (runs, callback) ->
 		if typeof runs is 'function'
 			callback = runs
 			runs = 5	
 		Job = require('./models/job')(Flow::connection)
 		Job.find({flowId: @get('id')}).sort("runId").exec (err, res) ->
-			return callback [] if not res or res.length is 0
+			if not res or res.length is 0
+				console.log 'No job results returned'
+				return callback []
 			runIds = []
 			for run in res
 				runIds.push run.runId if runIds.indexOf(run.runId) == -1 
