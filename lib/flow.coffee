@@ -55,14 +55,14 @@ class Flow extends Object
 			order: order
 		@createJob(job)
 		@trigger 'error', error, data, runId, order, module
-
 		
 	createJob: (job) ->
 		throw new Error "Must include a flow id" if not job.flowId?
 		throw new Error "Must include a module id" if not job.moduleId?
 		#Job.update({}, job, {upsert: true}).exec()
 		Job = require('./models/job')(Flow::connection)
-		Job.create job, () ->
+		Job.create job, (err) ->
+			throw new Error err if err
 
 	getLastRun: (callback) ->
 		Job = require('./models/job')(Flow::connection)

@@ -16,31 +16,27 @@ class Pipeliner
 		if connection
 			@setup(connection)
 		else
-			@newConnection gconfig.db
-
+			connection = mongoose.createConnection @config.db
+		
+			connection.on 'connected', (error) =>
+				@setup(connection)
+			
+			connection.on 'error', (error) =>
+				return console.log error
+			
 	resetConnection: () ->
 		@setConnection()	
 
-	newConnection: (db, callback) ->
-		return false if not db
-		connection = mongoose.createConnection db
-		
-		connection.on 'connected', (error) =>
-			@setup(connection)
-			callback connection if callback
-		
-		connection.on 'error', (error) =>
-			return console.log error
-
 	setup: (connection) ->
 		@connection = connection
-		console.log 'pipeliner setting up'
-		#console.log @connection
 		@Flow = require './lib/flow'
 		@Module = require './lib/module'
 
 		@Flow::connection = connection
 		@Module::connection = connection
-		@Job = require('./lib/models/job')(connection)
+		@Job = @getJobModel(connection)
+
+	getJobModel: (connection) ->
+		return require('./lib/models/job')(connection)
 
 module.exports = new Pipeliner
