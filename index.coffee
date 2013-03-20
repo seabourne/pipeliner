@@ -2,37 +2,45 @@ mongoose = require('mongoose')
 
 Setting = require './lib/models/setting'
 
-global.pipelinerConfig = {db: 'mongodb://localhost/pipeliner'} unless global.pipelinerConfig?
+gconfig = {db: 'mongodb://localhost/pipeliner'}
 
 class Pipeliner
-	constructor: (config) ->
-		@config = global.pipelinerConfig
-		@config = config if config 
-		@setup()
+	constructor: (config) -> 
+		@setConfig()
 
 	setConfig: (config) ->
-		@config = config
-		@setup()
+		@config = if config then config else gconfig
+		@setConnection()
 
-	setDefaultConfig: (config) ->
-		global.pipelinerConfig = config	
-		unless config?
-			global.pipelinerConfig = {db: 'mongodb://localhost/pipeliner'} 
+	setConnection: (connection) ->
+		if connection
+			@setup(connection)
+		else
+			@newConnection gconfig.db
+
+	resetConnection: () ->
+		@setConnection()	
+
+	newConnection: (db, callback) ->
+		return false if not db
+		connection = mongoose.createConnection db
 		
-		@setConfig global.pipelinerConfig
-		@setup()
+		connection.on 'connected', (error) =>
+			@setup(connection)
+			callback connection if callback
+		
+		connection.on 'error', (error) =>
+			return console.log error
 
-	setup: () ->
-		@connection = mongoose.createConnection @config.db
-		@connection.on 'error', (error) =>
-			console.log 'error occured'
-			console.log error
-
+	setup: (connection) ->
+		@connection = connection
+		console.log 'pipeliner setting up'
+		#console.log @connection
 		@Flow = require './lib/flow'
 		@Module = require './lib/module'
 
-		@Flow::connection = @connection
-		@Module::connection = @connection
-		@Job = require('./lib/models/job')(@connection)
+		@Flow::connection = connection
+		@Module::connection = connection
+		@Job = require('./lib/models/job')(connection)
 
 module.exports = new Pipeliner

@@ -42,7 +42,7 @@ class Flow extends Object
 			complete: true
 			runId: runId
 			order: order	
-		@createJob(job) if @testing
+		@createJob(job) #if @testing
 
 	handleError: (error, data, runId, order, module) ->
 		job = 
