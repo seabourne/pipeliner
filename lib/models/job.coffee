@@ -1,4 +1,5 @@
 module.exports = (connection) -> 
+	return connection.models['Job'] if connection.models['Job']
 	Schema = connection.base.Schema
 
 	JobSchema = new Schema

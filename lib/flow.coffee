@@ -5,6 +5,10 @@ class Flow extends Object
 		super(@config)
 		@_modules = {}
 
+	runJobQuery: (callback) ->
+		Job = require('./models/job')(Flow::connection)
+		callback Job	
+
 	start: () ->
 		for id, module of @_modules
 			module.start()
@@ -21,7 +25,7 @@ class Flow extends Object
 
 	addModules: (modules) ->
 		for module in modules
-			@addModule module
+			@addModule module		
 
 	addModule: (module) ->
 		throw new Error("Module must have an id") if not module.get? or not module.get('id')?
@@ -60,54 +64,54 @@ class Flow extends Object
 		throw new Error "Must include a flow id" if not job.flowId?
 		throw new Error "Must include a module id" if not job.moduleId?
 		#Job.update({}, job, {upsert: true}).exec()
-		Job = require('./models/job')(Flow::connection)
-		Job.create job, (err) ->
-			throw new Error err if err
+		@runJobQuery (Job) ->
+			Job.create job, (err) ->
+				throw new Error err if err
 
 	getLastRun: (callback) ->
-		Job = require('./models/job')(Flow::connection)
-		Job.findOne({flowId: @get('id')}).sort("-createdOn").exec (err, res) ->
-			return callback [] if not res
-			Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
-				callback jobs
+		@runJobQuery (Job) ->
+			Job.findOne({flowId: @get('id')}).sort("-createdOn").exec (err, res) ->
+				return callback [] if not res
+				Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
+					callback jobs
 
 	getRun: (id, callback) ->	
-		Job = require('./models/job')(Flow::connection)
-		Job.find({runId: id}).sort("order").exec (err, jobs) ->
-			callback jobs
+		@runJobQuery (Job) ->
+			Job.find({runId: id}).sort("order").exec (err, jobs) ->
+				callback jobs
 
 	getLastRuns: (runs, callback) ->
 		if typeof runs is 'function'
 			callback = runs
 			runs = 5	
-		Job = require('./models/job')(Flow::connection)
-		Job.find({flowId: @get('id')}).sort("runId").exec (err, res) ->
-			if not res or res.length is 0
-				console.log 'No job results returned'
-				return callback []
-			runIds = []
-			for run in res
-				runIds.push run.runId if runIds.indexOf(run.runId) == -1 
-				break if runIds.length == 5
+		@runJobQuery (Job) ->
+			Job.find({flowId: @get('id')}).sort("runId").exec (err, res) =>
+				if not res or res.length is 0
+					console.log 'No job results returned'
+					return callback []
+				runIds = []
+				for run in res
+					runIds.push run.runId if runIds.indexOf(run.runId) == -1 
+					break if runIds.length == 5
 
-			Job.find({runId: {$in: runIds}}).sort('runId order').exec (err, jobs) ->
-				callback jobs
+				Job.find({runId: {$in: runIds}}).sort('runId order').exec (err, jobs) ->
+					callback jobs
 
 	getError: (errorId, callback) ->
-		Job = require('./models/job')(Flow::connection)
-		Job.findById(errorId).exec (err, job) ->
-			callback job			
+		@runJobQuery (Job) ->
+			Job.findById(errorId).exec (err, job) ->
+				callback job			
 
 	getErrors: (callback) ->
-		Job = require('./models/job')(Flow::connection)
-		Job.find({flowId: @get('id'), complete: false}).sort("-createdOn").exec (err, jobs) ->
-			callback jobs			
+		@runJobQuery (Job) ->
+			Job.find({flowId: @get('id'), complete: false}).sort("-createdOn").exec (err, jobs) ->
+				callback jobs			
 
 	getLastError: (callback) ->
-		Job = require('./models/job')(Flow::connection)
-		Job.findOne({flowId: @get('id'), complete: false}).sort("-createdOn").exec (err, res) ->
-			Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
-				callback jobs
+		@runJobQuery (Job) ->
+			Job.findOne({flowId: @get('id'), complete: false}).sort("-createdOn").exec (err, res) ->
+				Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
+					callback jobs
 
 
 module.exports = Flow

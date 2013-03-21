@@ -33,7 +33,6 @@ class Pipeliner
 		@Module = require './lib/module'
 
 		@Flow::connection = connection
-		@Module::connection = connection
 		@Job = @getJobModel(connection)
 
 	getJobModel: (connection) ->
