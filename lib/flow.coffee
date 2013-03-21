@@ -69,7 +69,7 @@ class Flow extends Object
 				throw new Error err if err
 
 	getLastRun: (callback) ->
-		@runJobQuery (Job) ->
+		@runJobQuery (Job) =>
 			Job.findOne({flowId: @get('id')}).sort("-createdOn").exec (err, res) ->
 				return callback [] if not res
 				Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
@@ -84,7 +84,7 @@ class Flow extends Object
 		if typeof runs is 'function'
 			callback = runs
 			runs = 5	
-		@runJobQuery (Job) ->
+		@runJobQuery (Job) =>
 			Job.find({flowId: @get('id')}).sort("runId").exec (err, res) =>
 				if not res or res.length is 0
 					console.log 'No job results returned'
@@ -103,12 +103,12 @@ class Flow extends Object
 				callback job			
 
 	getErrors: (callback) ->
-		@runJobQuery (Job) ->
+		@runJobQuery (Job) =>
 			Job.find({flowId: @get('id'), complete: false}).sort("-createdOn").exec (err, jobs) ->
 				callback jobs			
 
 	getLastError: (callback) ->
-		@runJobQuery (Job) ->
+		@runJobQuery (Job) =>
 			Job.findOne({flowId: @get('id'), complete: false}).sort("-createdOn").exec (err, res) ->
 				Job.find({runId: res.runId}).sort('order').exec (err, jobs) ->
 					callback jobs
