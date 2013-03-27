@@ -1,0 +1,19 @@
+{
+  "name": "pipeliner",
+  "version": "0.0.0",
+  "description": "A toolkit for creating pipelines of jobs",
+  "main": "index.coffee",
+  "scripts": {
+    "test": "mocha --compilers coffee:coffee-script -R spec test/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/seabourne/pipeliner.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "dependencies": {
+    "should": "~1.2.2"
+  }
+}
