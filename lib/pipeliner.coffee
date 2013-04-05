@@ -35,8 +35,11 @@ class Pipeliner extends events.EventEmitter
 	runFlow: (flow) ->
 		for mod in flow
 			if mod.next
-				mod.module.on 'next', (doc) ->
-					mod.next.queue.push doc
+				@_connectFlow mod, mod.next
 			mod.queue.process mod.module.process
+
+	_connectFlow: (mod, next) ->
+		mod.module.on 'next', (doc) ->
+			next.queue.push doc
 
 module.exports = Pipeliner

@@ -7,4 +7,4 @@ describe 'lib', ->
 			lib.should.have.property('Pipeliner')
 			lib.should.have.property('Queue')
 			lib.should.have.property('Module')
-#			lib.should.have.property('RedisQueue')
+			lib.should.have.property('RedisQueue')

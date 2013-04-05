@@ -2,16 +2,18 @@ redisq = require 'redisq'
 
 Queue = require './queue'
 
-class _RedisQueue extends Queue
-	# TODO: factory to set options
+class RedisQueue extends Queue
+	# TODO: factory to set options like host, concurrency
 	constructor: (name) ->
 		@rq = redisq.queue name
+		@concurrency = 1
 
 	push: (object) ->
-		@rq.push object
+		# TODO this can fail
+		@rq.push object, ->
 
 	process: (callback) ->
-		@rq.process callback, 1
+		@rq.process callback, @concurrency
 
 
-module.exports = _RedisQueue
+module.exports = RedisQueue
