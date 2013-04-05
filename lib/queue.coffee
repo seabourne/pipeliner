@@ -1,18 +1,21 @@
 events = require 'events'
 
-class BaseQueue extends events.EventEmitter
+class Queue extends events.EventEmitter
 	constructor: (name) ->
 		@name = name
 		@_internalQueue = []
 
 	push: (object) ->
 		@_internalQueue.push object
+		@emit 'push', object
 
-	pop: (callback) ->
+	_pop: (callback) ->
 		callback @_internalQueue.pop()
 
 	process: (callback) ->
+		@on 'push', (object) ->
+			@_pop callback
 		while @_internalQueue.length
-			@pop callback
+			@_pop callback
 
-module.exports = BaseQueue
+module.exports = Queue

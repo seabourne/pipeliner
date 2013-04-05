@@ -35,7 +35,7 @@ describe 'Pipeliner', ->
 			done()
 
 		it "creates queues for each task", ->
-			_.keys(queues).should.eql _.pluck(@tasks, 'name')
+			_.keys(queues).should.eql _.map(@tasks, (t) -> 'test:'+t.name)
 
 		it "keeps a reference to the flow", ->
 			_.keys(@p.getFlows()).should.eql ['test']

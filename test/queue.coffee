@@ -18,12 +18,17 @@ describe 'Queue', ->
 		it "should push the object into the queue", (done) ->
 			object = {some: "object"}
 			@instance.push object
-			@instance.pop (ret) ->
+			@instance._pop (ret) ->
 				ret.should.equal object
 				done()
 
-	describe "pop", (done) ->
-		it.skip "should process one", (done) ->
-
 	describe "process", (done) ->
-		it.skip "should process all", (done) ->
+		it "should process all", (done) ->
+			@instance.push {x: 1}
+			@instance.push {x: 2}
+			count = 0
+			@instance.process (doc) ->
+				count += 1
+				if count is 3
+					done()
+			@instance.push {x: 3}
