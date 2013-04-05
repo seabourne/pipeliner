@@ -1,8 +1,9 @@
 should = require 'should'
 
-app = require '../index'
+lib = require '../index'
 
-describe 'App', ->
-	describe "#constructor", ->
+describe 'lib', ->
 		it "should get an object back", ->
-			app.should.be.ok
+			lib.should.have.property('Pipeliner')
+			lib.should.have.property('Queue')
+#			lib.should.have.property('RedisQueue')
