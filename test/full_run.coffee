@@ -41,12 +41,13 @@ describe "A full example", ->
 		it "should run the numbers", (done) ->
 			p = new Pipeliner(Queue)
 			p.createFlow('summer', @flow)
+			p.purge 'summer'
 			p.trigger 'summer', @data
-
 			@o.on 'complete', (flow, module, doc) ->
-				_.pluck(_finalDocs, 'sum').should.eql [6, 15]
-				_finalDocs = []
-				done()
+				if _finalDocs.length == 2
+					_.pluck(_finalDocs, 'sum').should.eql [6, 15]
+					_finalDocs = []
+					done()
 
 			p.run()
 
@@ -64,6 +65,7 @@ describe "A full example", ->
 		it "should run the numbers", (done) ->
 			p = new Pipeliner(RedisQueue)
 			p.createFlow('summer', @flow)
+			p.purge 'summer'
 			p.trigger 'summer', @data
 
 			@o.on 'complete', (flow, module, doc) ->

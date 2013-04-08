@@ -32,3 +32,11 @@ describe 'Queue', ->
 				if count is 3
 					done()
 			@instance.push {x: 3}
+
+	describe "purge", ->
+		it "should empty queue", ->
+			@instance.push {x: 1}
+			@instance.purge()
+			@instance.on 'purge', ->
+				@instance._pop (ret) ->
+					should.eql ret, null

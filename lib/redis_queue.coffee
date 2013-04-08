@@ -15,5 +15,8 @@ class RedisQueue extends Queue
 	process: (callback) ->
 		@rq.process callback, @concurrency
 
+	purge: ->
+		@rq.purge (err, res) =>
+			@emit 'purged' if res
 
 module.exports = RedisQueue
