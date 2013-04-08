@@ -3,10 +3,10 @@ should = require 'should'
 Module = require '../lib/module'
 
 class TestModule extends Module
-	process: (doc) =>
+	process: (doc, done) =>
 		doc.processed = true
 		@next doc
-		@complete()
+		super doc, done
 
 describe "Module", ->
 	describe "next", ->
@@ -31,6 +31,12 @@ describe "Module", ->
 			m.on 'complete', ->
 				done()
 			m.process()
+
+		it "should call done callback if provided", (done) ->
+			m = new TestModule()
+			m.process x:1, (err, res) ->
+				res.should.eql true
+				done()
 
 	describe "TestModule.process", ->
 		it "should emit next doc, processed", (done) ->
