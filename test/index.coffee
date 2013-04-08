@@ -1,22 +1,10 @@
 should = require 'should'
 
-Pipeliner = require '../index'
+lib = require '../index'
 
-config = {key: 'value'}
-
-describe 'App', ->
-	describe "#constructor", ->
-		it "should accept a passed config object", ->
-			app = new Pipeliner config
-			app._config.should.equal config
-
-	describe "#setConfig", ->
-		it "should set the config var", ->
-			app = new Pipeliner
-			app.setConfig config
-			app._config.should.equal config
-
-	describe "#getConfig", ->
-		it "should get the config", ->
-			app = new Pipeliner config
-			app.getConfig().should.equal config
+describe 'lib', ->
+		it "should get an object back", ->
+			lib.should.have.property('Pipeliner')
+			lib.should.have.property('Queue')
+			lib.should.have.property('Module')
+			lib.should.have.property('RedisQueue')
