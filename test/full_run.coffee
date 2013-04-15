@@ -7,24 +7,24 @@ RedisQueue = require '../lib/redis_queue'
 Module = require '../lib/module'
 
 class Input extends Module
-	process: (doc) =>
+	process: (doc, done) =>
 		@next subdoc for subdoc in doc.docs
-		@complete()
+		super doc, done
 
 class Sum extends Module
-	process: (doc) =>
+	process: (doc, done) =>
 		add = (x,y) ->
 			x + y
 		doc.sum = _.reduce(doc.numbers, add, 0)
 		@next doc
-		@complete()
+		super doc, done
 
 _finalDocs = []
 
 class Output extends Module
-	process: (doc) =>
+	process: (doc, done) =>
 		_finalDocs.push doc
-		@complete()
+		super doc, done
 
 describe "A full example", ->
 	describe "using in-memory q", ->
@@ -41,12 +41,13 @@ describe "A full example", ->
 		it "should run the numbers", (done) ->
 			p = new Pipeliner(Queue)
 			p.createFlow('summer', @flow)
+			p.purge 'summer'
 			p.trigger 'summer', @data
-
 			@o.on 'complete', (flow, module, doc) ->
-				_.pluck(_finalDocs, 'sum').should.eql [6, 15]
-				_finalDocs = []
-				done()
+				if _finalDocs.length == 2
+					_.pluck(_finalDocs, 'sum').should.eql [6, 15]
+					_finalDocs = []
+					done()
 
 			p.run()
 
@@ -64,11 +65,13 @@ describe "A full example", ->
 		it "should run the numbers", (done) ->
 			p = new Pipeliner(RedisQueue)
 			p.createFlow('summer', @flow)
+			p.purge 'summer'
 			p.trigger 'summer', @data
 
 			@o.on 'complete', (flow, module, doc) ->
-				_.pluck(_finalDocs, 'sum').should.eql [6, 15]
-				_finalDocs = []
-				done()
+				if _finalDocs.length == 2
+					_.pluck(_finalDocs, 'sum').should.eql [6, 15]
+					_finalDocs = []
+					done()
 
 			p.run()

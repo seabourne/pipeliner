@@ -18,4 +18,8 @@ class Queue extends events.EventEmitter
 		while @_internalQueue.length
 			@_pop callback
 
+	purge: ->
+		@_internalQueue = []
+		@emit 'purged'
+
 module.exports = Queue

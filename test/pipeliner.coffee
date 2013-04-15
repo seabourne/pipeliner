@@ -17,6 +17,8 @@ class TestQueue
 
 	process: (callback) ->
 
+	purge: ->
+		@tasks = []
 
 describe 'Pipeliner', ->
 	describe "#constructor", ->
@@ -53,3 +55,10 @@ describe 'Pipeliner', ->
 
 	describe "runner", ->
 		it.skip "should run the processors"
+
+	describe "purge", ->
+		it "should empty all queues", ->
+			@p.trigger 'test', x: 1
+			@p.purge 'test'
+			@p.flows['test'][0].queue.tasks.should.eql []
+			@p.flows['test'][1].queue.tasks.should.eql []

@@ -25,6 +25,9 @@ class Pipeliner extends events.EventEmitter
 			throw new ReferenceError "Flow " + flowName + " is not defined."
 		@flows[flowName][0].queue.push(document)
 
+	purge: (flowName) ->
+		x.queue.purge() for x in @flows[flowName]
+
 	# TODO: allow override flow modules here
 	run: (flowNames) ->
 		if not flowNames
