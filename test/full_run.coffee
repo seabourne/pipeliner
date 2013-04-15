@@ -7,24 +7,25 @@ RedisQueue = require '../lib/redis_queue'
 Module = require '../lib/module'
 
 class Input extends Module
-	process: (doc, done) =>
-		@next subdoc for subdoc in doc.docs
-		super doc, done
+	process: (doc, next, complete) =>
+		next subdoc for subdoc in doc.docs
+		complete()
 
 class Sum extends Module
-	process: (doc, done) =>
+	process: (doc, next, complete) =>
 		add = (x,y) ->
 			x + y
 		doc.sum = _.reduce(doc.numbers, add, 0)
-		@next doc
-		super doc, done
+		next doc
+		complete()
 
 _finalDocs = []
 
 class Output extends Module
-	process: (doc, done) =>
+	process: (doc, next, complete) =>
 		_finalDocs.push doc
-		super doc, done
+		next doc
+		complete()
 
 describe "A full example", ->
 	describe "using in-memory q", ->

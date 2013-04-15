@@ -39,7 +39,7 @@ class Pipeliner extends events.EventEmitter
 		for mod in flow
 			if mod.next
 				@_connectFlow mod, mod.next
-			mod.queue.process mod.module.process
+			mod.queue.process mod.module.processData
 
 	_connectFlow: (mod, next) ->
 		mod.module.on 'next', (doc) ->

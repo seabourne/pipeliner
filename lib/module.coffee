@@ -1,15 +1,18 @@
 events = require 'events'
 
 class Module extends events.EventEmitter
-	process: (doc, done) ->
-		@complete()
-		if done
-			done null, true
+	processData: (doc, done) =>
+		next = (doc) =>
+			@emit "next", doc
 
-	next: (doc) ->
-		@emit "next", doc
+		complete = () =>
+			@emit "complete"
 
-	complete: () ->
-		@emit "complete"
+		@process doc, next, complete 
+
+	process: (doc, next, complete) ->
+		if next
+			next null, true
+		
 
 module.exports = Module

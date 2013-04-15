@@ -3,10 +3,10 @@ should = require 'should'
 Module = require '../lib/module'
 
 class TestModule extends Module
-	process: (doc, done) =>
+	process: (doc, next, complete) =>
 		doc.processed = true
-		@next doc
-		super doc, done
+		next doc
+		complete()
 
 describe "Module", ->
 	describe "next", ->
@@ -16,27 +16,21 @@ describe "Module", ->
 			m.on 'next', (doc) ->
 				doc.should.eql d
 				done()
-			m.next(d)
+			m.emit 'next', d
 
 	describe "complete", ->
 		it "should emit event", (done) ->
 			m = new Module()
 			m.on 'complete', ->
 				done()
-			m.complete()
+			m.emit 'complete'
 
-	describe "process", ->
-		it "should trigger complete", (done) ->
+	describe "processData", ->
+		it "should trigger process", (done) ->
 			m = new Module()
-			m.on 'complete', ->
+			m.process = (d, next, complete) ->
 				done()
-			m.process()
-
-		it "should call done callback if provided", (done) ->
-			m = new TestModule()
-			m.process x:1, (err, res) ->
-				res.should.eql true
-				done()
+			m.processData()
 
 	describe "TestModule.process", ->
 		it "should emit next doc, processed", (done) ->
@@ -45,4 +39,4 @@ describe "Module", ->
 			m.on 'next', (doc) ->
 				doc.should.have.property("processed", true)
 				done()
-			m.process(d)
+			m.processData(d)
