@@ -39,7 +39,18 @@ class Pipeliner extends events.EventEmitter
 		for mod in flow
 			if mod.next
 				@_connectFlow mod, mod.next
-			mod.queue.process mod.module.processData
+			mod.queue.process @setupCallback mod
+
+	setupCallback: (mod) ->
+		return (doc, done) =>
+			next = (doc) =>
+				mod.module.emit "next", doc
+
+			complete = () =>
+				mod.module.emit "complete"
+
+			mod.module.process doc, next, complete 
+
 
 	_connectFlow: (mod, next) ->
 		mod.module.on 'next', (doc) ->

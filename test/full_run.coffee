@@ -4,7 +4,7 @@ _ = require 'underscore'
 Pipeliner = require '../lib/pipeliner'
 Queue = require '../lib/queue'
 RedisQueue = require '../lib/redis_queue'
-Module = require '../lib/module'
+Module = require('events').EventEmitter
 
 class Input extends Module
 	process: (doc, next, complete) =>
@@ -68,7 +68,6 @@ describe "A full example", ->
 			p.createFlow('summer', @flow)
 			p.purge 'summer'
 			p.trigger 'summer', @data
-
 			@o.on 'complete', (flow, module, doc) ->
 				if _finalDocs.length == 2
 					_.pluck(_finalDocs, 'sum').should.eql [6, 15]

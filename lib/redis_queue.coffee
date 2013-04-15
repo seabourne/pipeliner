@@ -15,7 +15,7 @@ class RedisQueue extends Queue
 
 	process: (callback) ->
 		@rq.process callback, @concurrency
-		@on 'push', (object) ->
+		@on 'push', (object) =>
 			if not @rq.workersActive
 				@rq.process callback, @concurrency
 
