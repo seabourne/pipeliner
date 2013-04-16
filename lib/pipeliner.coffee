@@ -77,8 +77,7 @@ class Pipeliner extends events.EventEmitter
 				if m and m.call?
 					return m doc, ne, co 
 
-
-			next doc, next, 
+			next doc, next, complete
 				
 
 
