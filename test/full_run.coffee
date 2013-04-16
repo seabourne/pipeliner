@@ -11,6 +11,8 @@ class Input extends Module
 		next subdoc for subdoc in doc.docs
 		complete()
 
+	type: 'input'	
+
 class Sum extends Module
 	process: (doc, next, complete) =>
 		add = (x,y) ->
@@ -19,6 +21,8 @@ class Sum extends Module
 		next doc
 		complete()
 
+	type: 'processor'	
+
 _finalDocs = []
 
 class Output extends Module
@@ -26,6 +30,8 @@ class Output extends Module
 		_finalDocs.push doc
 		next doc
 		complete()
+
+	type: 'output'		
 
 describe "A full example", ->
 	describe "using in-memory q", ->
@@ -71,6 +77,33 @@ describe "A full example", ->
 			@o.on 'complete', (flow, module, doc) ->
 				if _finalDocs.length == 2
 					_.pluck(_finalDocs, 'sum').should.eql [6, 15]
+					_finalDocs = []
+					done()
+
+			p.run()
+
+	describe "middleware", ->
+		before (done) ->
+			@o = new Output()
+			@flow = [
+				{name: 'input', module: new Input()}
+				{name: 'sum', module: new Sum()}
+				{name: 'output', module: @o}
+			]
+			@data = docs: [{numbers: [1,2,3]}, {numbers: [4,5,6]}]
+			done()
+
+		it "should apply the middleware", (done) ->
+			p = new Pipeliner(Queue)
+			p.use (doc, next, complete) ->
+				doc.numbers = [1,1,1] if doc.numbers?
+				next doc
+			p.createFlow('summer', @flow)
+			p.purge 'summer'
+			p.trigger 'summer', @data
+			@o.on 'complete', (flow, module, doc) ->
+				if _finalDocs.length == 2
+					_.pluck(_finalDocs, 'sum').should.eql [3, 3]
 					_finalDocs = []
 					done()
 

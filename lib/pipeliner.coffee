@@ -5,6 +5,7 @@ class Pipeliner extends events.EventEmitter
 	constructor: (queue) ->
 		@queue = queue
 		@flows = []
+		@_mw = []
 
 	createFlow: (name, tasks) ->
 		flow = @flows[name] = []
@@ -19,6 +20,9 @@ class Pipeliner extends events.EventEmitter
 
 	getFlows: () ->
 		@flows
+
+	use: (middleware) ->
+		@_mw.push middleware
 
 	trigger: (flowName, document) ->
 		if not @flows[flowName]
@@ -42,14 +46,40 @@ class Pipeliner extends events.EventEmitter
 			mod.queue.process @setupCallback mod
 
 	setupCallback: (mod) ->
-		return (doc, done) =>
-			next = (doc) =>
-				mod.module.emit "next", doc
+		_stack = []
+		for mw in @_mw
+			_stack.push mw
 
-			complete = () =>
+		_stack.push (doc, next, complete) ->
+			c = () ->
 				mod.module.emit "complete"
+				complete()
 
-			mod.module.process doc, next, complete 
+			n = (d) ->
+				mod.module.emit "next", d
+				next(d)
+
+			mod.module.process doc, n, c	
+
+		return (doc) ->
+			i = 0
+			complete = () -> 
+			next = (doc, ne, co) ->
+				return if i > _stack.length - 1
+
+				ne = next unless ne?
+				co = complete unless co?
+				
+				m = _stack[i++]
+				
+				if m and m.process?
+					return m.process doc, ne, co 
+				if m and m.call?
+					return m doc, ne, co 
+
+
+			next doc, next, 
+				
 
 
 	_connectFlow: (mod, next) ->

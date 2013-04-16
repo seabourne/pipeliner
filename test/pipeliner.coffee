@@ -62,3 +62,12 @@ describe 'Pipeliner', ->
 			@p.purge 'test'
 			@p.flows['test'][0].queue.tasks.should.eql []
 			@p.flows['test'][1].queue.tasks.should.eql []
+
+	describe "use", ->
+		it "should register middleware to process", (done) ->
+			mw = (d, next, complete) ->
+			@p.use mw
+			@p._mw[0].should.eql mw
+			done()
+
+		it.skip "should apply middleware"
