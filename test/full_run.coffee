@@ -25,6 +25,18 @@ class Sum extends Module
 
 _finalDocs = []
 
+class ErrorSum extends Module
+	process: (doc, next, complete) =>
+		add = (x,y) ->
+			x + y
+		doc.sum = _.reduce(doc.numbers, add, 0)
+		#next doc
+		complete 'Failure'
+
+	type: 'processor'	
+
+_finalDocs = []
+
 class Output extends Module
 	process: (doc, next, complete) =>
 		_finalDocs.push doc
@@ -108,3 +120,27 @@ describe "A full example", ->
 					done()
 
 			p.run()
+
+	describe "error", ->
+		before (done) ->
+			@proc = new ErrorSum()
+			@flow = [
+				{name: 'input', module: new Input()}
+				{name: 'sum', module: @proc}
+				{name: 'output', module: new Output()}
+			]
+			@data = docs: [{numbers: [1,2,3]}]
+			done()
+
+		it "should throw an error event", (done) ->
+			p = new Pipeliner(Queue)
+			p.createFlow('summer', @flow)
+			p.purge 'summer'
+			p.trigger 'summer', @data
+			@proc.on 'error', (error) ->
+				should.exist error
+				error.should.eql 'Failure'
+				done()
+
+			p.run()	
+				

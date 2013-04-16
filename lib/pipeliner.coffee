@@ -51,8 +51,9 @@ class Pipeliner extends events.EventEmitter
 			_stack.push mw
 
 		_stack.push (doc, next, complete) ->
-			c = () ->
-				mod.module.emit "complete"
+			c = (err) ->
+				mod.module.emit "error", err if err
+				mod.module.emit "complete" unless err
 				complete()
 
 			n = (d) ->
