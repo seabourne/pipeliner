@@ -50,35 +50,44 @@ class Pipeliner extends events.EventEmitter
 		for mw in @_mw
 			_stack.push mw
 
-		_stack.push (doc, next, complete) ->
+		_stack.push (doc, next, complete) =>
 			c = (err) ->
+				complete(err)
+				mod.module.emit "complete" 
 				mod.module.emit "error", err if err
-				mod.module.emit "complete" unless err
-				complete()
+				
 
-			n = (d) ->
+			n = (d, ne, co) ->
+				next(d, ne, co)
+				ne = next unless ne?
+				co = complete unless co?
 				mod.module.emit "next", d
-				next(d)
+				
+			try
+				mod.module.process doc, n, c
+			catch e
+				console.log e if e
+				complete e if e
 
-			mod.module.process doc, n, c	
-
-		return (doc) ->
+		return (doc) =>
 			i = 0
 			complete = () -> 
-			next = (doc, ne, co) ->
+			next = (doc, ne, co, mo) =>
+				mo = mod.module unless mo?
 				return if i > _stack.length - 1
 
 				ne = next unless ne?
 				co = complete unless co?
-				
-				m = _stack[i++]
-				
-				if m and m.process?
-					return m.process doc, ne, co 
-				if m and m.call?
-					return m doc, ne, co 
+				try
+					m = _stack[i++]
+					if m and m.process?
+						return m.process doc, ne, co, mo
+					if m and m.call?
+						return m doc, ne, co, mo
+				catch e
+					co e if e
 
-			next doc, next, complete
+			next doc, next, complete, mod.module
 				
 
 
