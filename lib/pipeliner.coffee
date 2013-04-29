@@ -71,7 +71,8 @@ class Pipeliner extends events.EventEmitter
 
 		return (doc) =>
 			i = 0
-			complete = () -> 
+			complete = (err) -> 
+				console.log err if err
 			next = (doc, ne, co, mo) =>
 				mo = mod.module unless mo?
 				return if i > _stack.length - 1
