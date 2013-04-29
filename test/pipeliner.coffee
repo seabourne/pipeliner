@@ -1,54 +1,73 @@
 should = require 'should'
+_ = require 'underscore'
 
-pipeliner = require '../index'
+Pipeliner = require '../lib/pipeliner'
 
-pipeliner.setConfig({db: 'mongodb://localhost/pipeliner_test'})
+queues = []
 
-Flow = pipeliner.Flow
-Job = pipeliner.Job
-Module = pipeliner.Module
+class TestQueue
+	constructor: (name) ->
+		@name = name
+		@tasks = []
 
-inputData = 
-	title: 'Some Title'
+		queues[name] = @
 
-class Input extends Module
-	processData: () ->
-		this.done(inputData)
+	push: (task) ->
+		@tasks.push task
 
-	start: () ->
-		this.process()
+	process: (callback) ->
 
-class UpcaseProcessor extends Module
-	processData: (data) ->
-		data.title = data.title.toUpperCase()
-		this.done(data)
+	purge: ->
+		@tasks = []
 
+describe 'Pipeliner', ->
+	describe "#constructor", ->
+		it "takes a provider, returns an object", ->
+			p = new Pipeliner(TestQueue)
+			p.should.have.property('queue')
 
-flow = input = processor = null
-
-describe "Pipeliner", () ->
-	describe "Run a flow", () ->
-		before () ->
-			Job.remove({}).exec()
-
+	describe "createFlow", ->
 		before (done) ->
-			flow = new Flow
-			input = new Input
-			processor = new UpcaseProcessor
+			@p = new Pipeliner(TestQueue)
+			@tasks = [
+				{name: 'input1'},
+				{name: 'processor1'}
+			]
+			@p.createFlow 'test', @tasks
+			done()
 
-			flow.addModule input 
-			flow.addModule processor 	
-			
-			input.doNext processor
+		it "creates queues for each task", ->
+			_.keys(queues).should.eql _.map(@tasks, (t) -> 'test:'+t.name)
 
-			processor.on 'complete', (data) ->
-				done()
+		it "keeps a reference to the flow", ->
+			_.keys(@p.getFlows()).should.eql ['test']
 
-			flow.start()
+	describe "trigger", ->
+		it "should error for non-existent flows", ->
+			(=>
+				@p.trigger "nope", {}
+			).should.throwError(/^Flow.*not defined/)
 
-		it "should work", (done) ->
-			Job.findOne moduleId: processor.get('id'), (err, job) ->
-				should.exist(job)
-				job.data.title.should.eql inputData.title.toUpperCase()
-				done()
+		it "should push to the input of the named flow", ->
+			doc = {x: 'x'}
+			@p.trigger "test", doc
+			@p.flows['test'][0].queue.tasks.should.eql [doc]
 
+	describe "runner", ->
+		it.skip "should run the processors"
+
+	describe "purge", ->
+		it "should empty all queues", ->
+			@p.trigger 'test', x: 1
+			@p.purge 'test'
+			@p.flows['test'][0].queue.tasks.should.eql []
+			@p.flows['test'][1].queue.tasks.should.eql []
+
+	describe "use", ->
+		it "should register middleware to process", (done) ->
+			mw = (d, next, complete) ->
+			@p.use mw
+			@p._mw[0].should.eql mw
+			done()
+
+		it.skip "should apply middleware"

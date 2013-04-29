@@ -1,20 +1,23 @@
 {
   "name": "pipeliner",
-  "version": "0.0.1",
-  "description": "A job pipelining framework",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "A toolkit for creating pipelines of jobs",
+  "main": "index.coffee",
   "scripts": {
     "test": "mocha --compilers coffee:coffee-script -R spec test/*"
   },
-  "repository": "git://github.com/seabourne/pipeliner",
-  "author": "Seabourne",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/seabourne/pipeliner.git"
+  },
+  "author": "",
   "license": "MIT",
+  "readmeFilename": "README.md",
   "dependencies": {
-    "mongoose": "~3.5.2",
-    "coffee-script": "~1.4.0",
-    "node-uuid": "~1.4.0",
-    "mocha": "~1.7.4",
-    "should": "~1.2.1",
-    "cloneextend": "0.0.3"
+      "redisq": "~0.1.9",
+      "underscore": "~1.4.4"
+  },
+  "devDependencies": {
+    "should": "~1.2.2"
   }
 }
