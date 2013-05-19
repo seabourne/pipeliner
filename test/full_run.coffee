@@ -7,26 +7,23 @@ RedisQueue = require '../lib/redis_queue'
 Module = require('events').EventEmitter
 
 class Input extends Module
-	process: (doc, next, complete) =>
+	process: (doc, next) ->
 		next subdoc for subdoc in doc.docs
-		complete()
 
 	type: 'input'	
 
 class Sum extends Module
-	process: (doc, next, complete) =>
+	process: (doc) ->
 		add = (x,y) ->
 			x + y
 		doc.sum = _.reduce(doc.numbers, add, 0)
-		next doc
-		complete()
 
 	type: 'processor'	
 
 _finalDocs = []
 
 class ErrorSum extends Module
-	process: (doc, next, complete) =>
+	process: (doc, next, complete) ->
 		add = (x,y) ->
 			x + y
 		doc.sum = _.reduce(doc.numbers, add, 0)
@@ -38,10 +35,8 @@ class ErrorSum extends Module
 _finalDocs = []
 
 class Output extends Module
-	process: (doc, next, complete) =>
+	process: (doc) ->
 		_finalDocs.push doc
-		next doc
-		complete()
 
 	type: 'output'		
 
@@ -96,30 +91,137 @@ describe "A full example", ->
 
 	describe "middleware", ->
 		before (done) ->
-			@o = new Output()
-			@flow = [
-				{name: 'input', module: new Input()}
-				{name: 'sum', module: new Sum()}
-				{name: 'output', module: @o}
-			]
 			@data = docs: [{numbers: [1,2,3]}, {numbers: [4,5,6]}]
 			done()
 
-		it "should apply the middleware", (done) ->
+		it "should apply the middleware with arity of 0", (done) ->
 			p = new Pipeliner(Queue)
-			p.use (doc, next, complete) ->
-				doc.numbers = [1,1,1] if doc.numbers?
-				next doc
-			p.createFlow('summer', @flow)
+			o = new Output()
+			flow = [
+				{name: 'input', module: new Input()}
+				{name: 'sum', module: new Sum()}
+				{name: 'output', module: o}
+			]
+			p.use () ->
+				should.exist @.type
+			p.createFlow('summer', flow)
 			p.purge 'summer'
 			p.trigger 'summer', @data
-			@o.on 'complete', (flow, module, doc) ->
+			o.on 'complete', () ->
+				if _finalDocs.length == 2
+					_.pluck(_finalDocs, 'sum').should.eql [6, 15]
+					_finalDocs = []
+					done()
+
+			p.run()	
+
+		it "should apply the middleware with arity of 1", (done) ->
+			p = new Pipeliner(Queue)
+			o = new Output()
+			flow = [
+				{name: 'input', module: new Input()}
+				{name: 'sum', module: new Sum()}
+				{name: 'output', module: o}
+			]
+			p.use (doc) ->
+				should.exist @.type
+				doc.numbers = [1,1,1] if doc.numbers?
+			p.createFlow('summer', flow)
+			p.purge 'summer'
+			p.trigger 'summer', @data
+			o.on 'complete', () ->
 				if _finalDocs.length == 2
 					_.pluck(_finalDocs, 'sum').should.eql [3, 3]
 					_finalDocs = []
 					done()
 
 			p.run()
+
+		it "should apply the middleware with arity of 2 using next", (done) ->
+			p = new Pipeliner(Queue)
+			o = new Output()
+			flow = [
+				{name: 'input', module: new Input()}
+				{name: 'sum', module: new Sum()}
+				{name: 'output', module: o}
+			]
+			p.use (doc, next) ->
+				should.exist @.type
+				doc.numbers = [1,1,1] if doc.numbers?
+				next doc
+			p.createFlow('summer', flow)
+			p.purge 'summer'
+			p.trigger 'summer', @data
+			o.on 'complete', (flow, module, doc) ->
+				if _finalDocs.length == 2
+					_.pluck(_finalDocs, 'sum').should.eql [3, 3]
+					_finalDocs = []
+					done()
+
+			p.run()	
+
+		it "should apply the middleware with arity of 3 using next and complete", (done) ->
+			p = new Pipeliner(Queue)
+			o = new Output()
+			flow = [
+				{name: 'input', module: new Input()}
+				{name: 'sum', module: new Sum()}
+				{name: 'output', module: o}
+			]
+			p.use (doc, next, complete) ->
+				should.exist @.type
+				doc.numbers = [1,1,1] if doc.numbers?
+				next doc, next, complete
+				complete()
+			p.createFlow('summer', flow)
+			p.purge 'summer'
+			p.trigger 'summer', @data
+			o.on 'complete', (flow, module, doc) ->
+				if _finalDocs.length == 2
+					_.pluck(_finalDocs, 'sum').should.eql [3, 3]
+					_finalDocs = []
+					done()
+
+			p.run()		
+
+		it "should use the passed next override", (done) ->
+			p = new Pipeliner(Queue)
+			o = new Output()
+			flow = [
+				{name: 'input', module: new Input()}
+				{name: 'sum', module: new Sum()}
+				{name: 'output', module: o}
+			]
+			doneCalled = false
+			p.use (doc, next, complete) ->
+				next doc, () ->
+					should.exist @.type
+					done() unless doneCalled
+					doneCalled = true
+				, complete
+			p.createFlow('summer', flow)
+			p.purge 'summer'
+			p.trigger 'summer', @data
+			p.run()			
+
+		it "should use the passed complete override", (done) ->
+			p = new Pipeliner(Queue)
+			o = new Output()
+			flow = [
+				{name: 'input', module: new Input()}
+				{name: 'sum', module: new Sum()}
+				{name: 'output', module: o}
+			]
+			doneCalled = false
+			p.use (doc, next, complete) ->
+				next doc, next, () ->
+					should.exist @.type
+					done() unless doneCalled
+					doneCalled = true
+			p.createFlow('summer', flow)
+			p.purge 'summer'
+			p.trigger 'summer', @data
+			p.run()		
 
 	describe "error", ->
 		before (done) ->

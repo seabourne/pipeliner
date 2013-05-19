@@ -49,41 +49,48 @@ class Pipeliner extends events.EventEmitter
 		_stack = []
 		for mw in @_mw
 			_stack.push mw
-
-		_stack.push (doc, next, complete) =>
-			c = (err, doc, m) ->
-				complete(err, doc, m)
-				return mod.module.emit "error", err, doc, m if err
-				mod.module.emit "complete" 
 				
-			n = (d, ne, co) ->
-				next(d, ne, co)
-				ne = next unless ne?
-				co = complete unless co?
-				mod.module.emit "next", d
-				
-			try
-				mod.module.process doc, n, c
-			catch e
-				complete e, doc, mod.module if e
+		_stack.push mod.module.process
 
 		return (doc) =>
 			i = 0
-			complete = (err) -> 
-				console.log err if err
-			next = (doc, ne, co, mo) =>
-				mo = mod.module unless mo?
-				return if i > _stack.length - 1
 
-				ne = next unless ne?
-				co = complete unless co?
-				m = _stack[i++]
-				if m and m.process?
-					return m.process doc, ne, co, mo
-				if m and m.call?
-					return m doc, ne, co, mo
+			complete = (err, d) -> 
+				return mod.module.emit "error", err, d, @ if err
+				mod.module.emit "complete", d
 
-			next doc, next, complete, mod.module
+			start = (doc, nn, cc) ->
+				next = () ->
+					return nn.apply mod.module, arguments if nn
+					start.apply mod.module, arguments
+				co = () ->
+					return cc.apply mod.module, arguments if cc
+					complete.apply mod.module, arguments
+				m = _stack[i]
+				unless m	
+					mod.module.emit "next", doc 
+					co.call mod.module, null, doc
+					return
+				i += 1
+				switch m.length
+					when 0
+						m.call mod.module
+						next doc, next, co
+					when 1
+						m.call mod.module, doc
+						next doc, next, co
+					when 2
+						m.call mod.module, doc, (doc, n, c) ->
+							if n and c
+								next doc, n, c 
+							else if n
+								next doc, n, co
+							else
+								next doc, next, co
+					when 3
+						m.call mod.module, doc, next, co
+			
+			start.call mod.module, doc, start, complete
 				
 
 
