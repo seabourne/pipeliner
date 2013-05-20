@@ -6,8 +6,9 @@ class Queue extends events.EventEmitter
 		@_internalQueue = []
 
 	push: (object) ->
-		@_internalQueue.push object
-		@emit 'push', object
+		process.nextTick =>
+			@_internalQueue.push object
+			@emit 'push', object
 
 	_pop: (callback) ->
 		callback @_internalQueue.pop()
