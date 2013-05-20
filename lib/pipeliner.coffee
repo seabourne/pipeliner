@@ -67,35 +67,37 @@ class Pipeliner extends events.EventEmitter
 					_completeQueue.push cb
 
 			complete = (err, d) -> 
-				cProc = _completeQueue[c]
-				return unless cProc or cContinue is false
-				c += 1
-				switch cProc.length
-					when 2
-						ret = cProc.call mod.module, err, d
-						complete err, doc
-					when 3
-						ret = cProc.call mod.module, err, d, complete							
-				cContinue = not (ret is false)
+				process.nextTick ->
+					cProc = _completeQueue[c]
+					return unless cProc or cContinue is false
+					c += 1
+					switch cProc.length
+						when 2
+							ret = cProc.call mod.module, err, d
+							complete err, doc
+						when 3
+							ret = cProc.call mod.module, err, d, complete							
+					cContinue = not (ret is false)
 				
 			next = () ->
 				n = 0
 				cb = (doc) ->
-					nProc = _nextQueue[n]
-					unless nProc or nConinue is false
-						return
-					n += 1
-					switch nProc.length
-						when 0
-							ret = nProc.call mod.module
-							cb(doc)
-						when 1
-							ret = nProc.call mod.module, doc
-							cb(doc)
-						when 2
-							ret = nProc.call mod.module, doc, cb
+					process.nextTick ->
+						nProc = _nextQueue[n]
+						unless nProc or nConinue is false
+							return
+						n += 1
+						switch nProc.length
+							when 0
+								ret = nProc.call mod.module
+								cb(doc)
+							when 1
+								ret = nProc.call mod.module, doc
+								cb(doc)
+							when 2
+								ret = nProc.call mod.module, doc, cb
 
-					nConinue = not (ret is false)
+						nConinue = not (ret is false)
 				cb.apply mod.module, arguments
 				
 			switch mod.module.process.length
