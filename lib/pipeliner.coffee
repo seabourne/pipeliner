@@ -46,7 +46,7 @@ class Pipeliner extends events.EventEmitter
 			mod.queue.process @setupCallback mod
 
 	setupCallback: (mod) ->
-		return (doc) =>
+		return (doc, done) =>
 			c = 0
 			cContinue = true
 			nConinue = true
@@ -66,21 +66,28 @@ class Pipeliner extends events.EventEmitter
 				, (cb) ->
 					_completeQueue.push cb
 
+			_completeQueue.push (err, doc) ->
+				console.log 'done called'
+				done() if done
+
 			complete = (err, d) -> 
+				console.log 'Complete called for '+@?.config?.title
 				cProc = _completeQueue[c]
 				return unless cProc or cContinue is false
 				c += 1
 				switch cProc.length
 					when 2
 						ret = cProc.call mod.module, err, d
-						complete err, doc
+						complete.call mod.module, err, doc
 					when 3
 						ret = cProc.call mod.module, err, d, complete							
 				cContinue = not (ret is false)
 				
 			next = () ->
+				
 				n = 0
 				cb = (doc) ->
+					console.log 'Next called for '+@?.config?.title
 					nProc = _nextQueue[n]
 					unless nProc or nConinue is false
 						return
@@ -88,10 +95,10 @@ class Pipeliner extends events.EventEmitter
 					switch nProc.length
 						when 0
 							ret = nProc.call mod.module
-							cb(doc)
+							cb.call mod.module, doc
 						when 1
 							ret = nProc.call mod.module, doc
-							cb(doc)
+							cb.call mod.module, doc
 						when 2
 							ret = nProc.call mod.module, doc, cb
 
@@ -101,15 +108,15 @@ class Pipeliner extends events.EventEmitter
 			switch mod.module.process.length
 				when 0
 					mod.module.process.call mod.module
-					next doc
-					complete()
+					next.call mod.module, doc
+					complete.call mod.module
 				when 1
 					mod.module.process.call mod.module, doc
-					next doc
-					complete()
+					next.call mod.module, doc
+					complete.call mod.module
 				when 2
 					mod.module.process.call mod.module, doc, next
-					complete()
+					complete.call mod.module
 				when 3
 					mod.module.process.call mod.module, doc, next, complete			
 

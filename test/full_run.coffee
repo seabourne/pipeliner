@@ -63,7 +63,8 @@ describe "A full example", ->
 			p.trigger 'summer', @data
 			@o.on 'complete', (flow, module, doc) ->
 				if _finalDocs.length == 2
-					_.pluck(_finalDocs, 'sum').should.eql [6, 15]
+					_.pluck(_finalDocs, 'sum').should.include 15
+					_.pluck(_finalDocs, 'sum').should.include 6
 					_finalDocs = []
 					done()
 
@@ -87,7 +88,8 @@ describe "A full example", ->
 			p.trigger 'summer', @data
 			@o.on 'complete', (flow, module, doc) ->
 				if _finalDocs.length == 2
-					_.pluck(_finalDocs, 'sum').should.eql [6, 15]
+					_.pluck(_finalDocs, 'sum').should.include 15
+					_.pluck(_finalDocs, 'sum').should.include 6
 					_finalDocs = []
 					done()
 
@@ -108,8 +110,7 @@ describe "A full example", ->
 			]
 			nextRun = false
 			nextComplete = false
-			p.use (doc, next, complete) ->
-				
+			p.use (next, complete) ->
 				console.log 'mw fired'
 				next (doc) ->
 					console.log 'next mw fired'
