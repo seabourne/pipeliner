@@ -1,8 +1,10 @@
 events = require 'events'
 _ = require 'underscore'
+debug = require('debug')('pipeliner')
 
 class Pipeliner extends events.EventEmitter
 	constructor: (queue) ->
+		debug 'Starting'
 		@queue = queue
 		@flows = []
 		@_mw = []
@@ -46,6 +48,7 @@ class Pipeliner extends events.EventEmitter
 			mod.queue.process @setupCallback mod
 
 	setupCallback: (mod) ->
+		debug 'Setting up callbacks'
 		return (doc, done) =>
 			c = 0
 			cContinue = true
@@ -54,10 +57,12 @@ class Pipeliner extends events.EventEmitter
 			_completeQueue = []
 			_completeQueue.push (err, doc) ->
 				return mod.module.emit "error", err, doc, @ if err
+				debug 'Complete emitted by %s', mod.module?.config?.title
 				mod.module.emit "complete", doc, @
 
 			_nextQueue = []
 			_nextQueue.push (doc) ->
+				debug 'Next emitted by %s', mod.module?.config?.title
 				mod.module.emit "next", doc, @
 			
 			for mw in @_mw
@@ -67,11 +72,9 @@ class Pipeliner extends events.EventEmitter
 					_completeQueue.push cb
 
 			_completeQueue.push (err, doc) ->
-				console.log 'done called'
 				done() if done
 
 			complete = (err, d) -> 
-				console.log 'Complete called for '+@?.config?.title
 				cProc = _completeQueue[c]
 				return unless cProc or cContinue is false
 				c += 1
@@ -87,7 +90,6 @@ class Pipeliner extends events.EventEmitter
 				
 				n = 0
 				cb = (doc) ->
-					console.log 'Next called for '+@?.config?.title
 					nProc = _nextQueue[n]
 					unless nProc or nConinue is false
 						return
@@ -104,7 +106,8 @@ class Pipeliner extends events.EventEmitter
 
 					nConinue = not (ret is false)
 				cb.apply mod.module, arguments
-				
+			
+			debug 'Processing %s', mod.module?.config?.title
 			switch mod.module.process.length
 				when 0
 					mod.module.process.call mod.module

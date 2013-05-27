@@ -14,8 +14,9 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
-      "redisq": "~0.1.9",
-      "underscore": "~1.4.4"
+    "redisq": "~0.1.9",
+    "underscore": "~1.4.4",
+    "debug": "~0.7.2"
   },
   "devDependencies": {
     "should": "~1.2.2"
