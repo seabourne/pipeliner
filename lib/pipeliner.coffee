@@ -42,6 +42,7 @@ class Pipeliner extends events.EventEmitter
 			@runFlow @flows[flowName]
 
 	runFlow: (flow) ->
+		console.log 'running flow'
 		for mod in flow
 			if mod.next
 				@_connectFlow mod, mod.next
@@ -49,64 +50,60 @@ class Pipeliner extends events.EventEmitter
 
 	setupCallback: (mod) ->
 		debug 'Setting up callbacks'
-		return (doc, done) =>
+		_completeQueue = []
+		_nextQueue = []
+		_completeQueue.push (err, doc) ->
+			return mod.module.emit "error", err, doc, @ if err
+			debug 'Complete emitted by %s', mod.module?.config?.title
+			mod.module.emit "complete", doc, @
+
+		
+		_nextQueue.push (doc) ->
+			debug 'Next emitted by %s', mod.module?.config?.title
+			mod.module.emit "next", doc, @
+		
+		for mw in @_mw
+			mw.call mod.module, (cb) ->
+				_nextQueue.push cb
+			, (cb) ->
+				_completeQueue.push cb
+
+		complete = () ->
 			c = 0
-			cContinue = true
-			nConinue = true
-
-			_completeQueue = []
-			_completeQueue.push (err, doc) ->
-				return mod.module.emit "error", err, doc, @ if err
-				debug 'Complete emitted by %s', mod.module?.config?.title
-				mod.module.emit "complete", doc, @
-
-			_nextQueue = []
-			_nextQueue.push (doc) ->
-				debug 'Next emitted by %s', mod.module?.config?.title
-				mod.module.emit "next", doc, @
-			
-			for mw in @_mw
-				mw.call mod.module, doc, (cb) ->
-					_nextQueue.push cb
-				, (cb) ->
-					_completeQueue.push cb
-
-			_completeQueue.push (err, doc) ->
-				done() if done
-
-			complete = (err, d) -> 
+			cb = (err, d) -> 
 				cProc = _completeQueue[c]
 				return unless cProc or cContinue is false
 				c += 1
 				switch cProc.length
 					when 2
 						ret = cProc.call mod.module, err, d
-						complete.call mod.module, err, doc
+						cb.call mod.module, err, d
 					when 3
-						ret = cProc.call mod.module, err, d, complete							
-				cContinue = not (ret is false)
-				
-			next = () ->
-				
-				n = 0
-				cb = (doc) ->
-					nProc = _nextQueue[n]
-					unless nProc or nConinue is false
-						return
-					n += 1
-					switch nProc.length
-						when 0
-							ret = nProc.call mod.module
-							cb.call mod.module, doc
-						when 1
-							ret = nProc.call mod.module, doc
-							cb.call mod.module, doc
-						when 2
-							ret = nProc.call mod.module, doc, cb
+						ret = cProc.call mod.module, err, d, cb							
+				cContinue = not (ret is false)		
+			cb.apply mod.module, arguments
 
-					nConinue = not (ret is false)
-				cb.apply mod.module, arguments
-			
+		next = () ->
+			n = 0
+			cb = (doc) ->
+				nProc = _nextQueue[n]
+				unless nProc or nConinue is false
+					return
+				n += 1
+				switch nProc.length
+					when 0
+						ret = nProc.call mod.module
+						cb.call mod.module, doc
+					when 1
+						ret = nProc.call mod.module, doc
+						cb.call mod.module, doc
+					when 2
+						ret = nProc.call mod.module, doc, cb
+
+				nConinue = not (ret is false)
+			cb.apply mod.module, arguments	
+
+		return (doc, done) =>			
 			debug 'Processing %s', mod.module?.config?.title
 			switch mod.module.process.length
 				when 0
@@ -123,6 +120,7 @@ class Pipeliner extends events.EventEmitter
 				when 3
 					mod.module.process.call mod.module, doc, next, complete			
 
+			done() if done
 
 	_connectFlow: (mod, next) ->
 		mod.module.on 'next', (doc) ->
