@@ -181,7 +181,6 @@ describe "A full example", ->
 			p.use (next, complete) ->
 				console.log 'mw fired'
 				next (doc) ->
-					console.log 'iterator fired'
 					nextCount += 1
 
 			p.createFlow('summer', flow)

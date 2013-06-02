@@ -10,21 +10,32 @@ class Pipeliner extends events.EventEmitter
 		@_mw = []
 		@_definedInputs = []
 		@_completedInputs = []
+		@_indexes = []
+		@_completes = []
+		@_nexts = []
 
 	createFlow: (name, tasks) ->
 		flow = @flows[name] = []
 		@_definedInputs[name] = @_definedInputs[name] || 0
 		@_completedInputs[name] = @_completedInputs[name] || 0
+		@_completes[name] = []
+		@_nexts[name] = []
+		@_indexes[name] = []
 		prev = null
+		i = 0
 		for task in tasks
 			queue = new @queue name + ':' + task.name
-			if task.module?.type is 'input'
+			if task.module and (task.module.type == 'input' or (_.isFunction(task.module.type) and task.module.type() == 'input'))
 				@_definedInputs[name] += 1
+			@_indexes[name][task.name] = i
+			@_completes[name][i] = 0
+			@_nexts[name][i] = 0
 			task = _.extend({queue: queue, flowName: name}, task)
 			flow.push task
 			if prev
 				prev.next = task
 			prev = task
+			i++
 
 	getFlows: () ->
 		@flows
@@ -54,40 +65,35 @@ class Pipeliner extends events.EventEmitter
 			mod.queue.process @setupCallback mod
 
 	checkRun: (flowName) =>
-		done = true
-		#check inputs completed
 		done = @_definedInputs[flowName] == @_completedInputs[flowName]
-		@_checkQueueLen done, 0, @flows[flowName], () =>
-			console.log 'emitted flow end'
-			@emit 'end'
-			
-	_checkQueueLen: (done, i, mods, cb) ->
-		return unless done
-		if i > (mods.length - 1)
-			return cb() if done
-			return
-		mods[i]?.queue?.length (len) =>
-			done = (len is 0)
-			@_checkQueueLen done, ++i, mods, cb
+		for i in [1..Object.keys(@_indexes[flowName]).length]
+			break if not done or not @_completes[flowName][i]?
+			break if @_nexts[flowName][i-1] == 0
+			done = @_completes[flowName][i] >= @_nexts[flowName][i-1]
+
+		@emit 'end' if done
 
 	setupCallback: (mod) ->
 		checkRun = @checkRun
 		_completedInputs = @_completedInputs
+		_indexes = @_indexes[mod.flowName]
+		_nexts = @_nexts[mod.flowName]
+		_completes = @_completes[mod.flowName]
 		debug 'Setting up callbacks'
 		_completeQueue = []
 		_nextQueue = []
 		_completeQueue.push (err, doc) ->
-			if @.type == 'input'
-				console.log 'input completed'
-				_completedInputs[mod.flowName] = _completedInputs[mod.flowName] + 1
+			_completes[_indexes[mod.name]] += 1
+			if @.type == 'input' or (_.isFunction(@type) and @type() == 'input')
+				_completedInputs[mod.flowName] += 1
 			checkRun mod.flowName
 			return mod.module.emit "error", err, doc, @ if err
 			debug 'Complete emitted by %s', mod.module?.config?.title
 			mod.module.emit "complete", doc, @
 
 		_nextQueue.push (doc) ->
+			_nexts[_indexes[mod.name]] += 1
 			debug 'Next emitted by %s', mod.module?.config?.title
-			mod.next.queue.push doc if mod.next
 			mod.module.emit "next", doc, @
 		
 		for mw in @_mw
@@ -151,7 +157,7 @@ class Pipeliner extends events.EventEmitter
 			done() if done
 
 	_connectFlow: (mod, next) ->
-		#mod.module.on 'next', (doc) ->
-			
+		mod.module.on 'next', (doc) ->
+			next.queue.push doc
 
 module.exports = Pipeliner
