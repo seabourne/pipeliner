@@ -8,13 +8,19 @@ class Pipeliner extends events.EventEmitter
 		@queue = queue
 		@flows = []
 		@_mw = []
+		@_definedInputs = []
+		@_completedInputs = []
 
 	createFlow: (name, tasks) ->
 		flow = @flows[name] = []
+		@_definedInputs[name] = @_definedInputs[name] || 0
+		@_completedInputs[name] = @_completedInputs[name] || 0
 		prev = null
 		for task in tasks
 			queue = new @queue name + ':' + task.name
-			task = _.extend({queue: queue}, task)
+			if task.module?.type is 'input'
+				@_definedInputs[name] += 1
+			task = _.extend({queue: queue, flowName: name}, task)
 			flow.push task
 			if prev
 				prev.next = task
@@ -42,24 +48,46 @@ class Pipeliner extends events.EventEmitter
 			@runFlow @flows[flowName]
 
 	runFlow: (flow) ->
-		console.log 'running flow'
 		for mod in flow
 			if mod.next
 				@_connectFlow mod, mod.next
 			mod.queue.process @setupCallback mod
 
+	checkRun: (flowName) =>
+		done = true
+		#check inputs completed
+		done = @_definedInputs[flowName] == @_completedInputs[flowName]
+		@_checkQueueLen done, 0, @flows[flowName], () =>
+			console.log 'emitted flow end'
+			@emit 'end'
+			
+	_checkQueueLen: (done, i, mods, cb) ->
+		return unless done
+		if i > (mods.length - 1)
+			return cb() if done
+			return
+		mods[i]?.queue?.length (len) =>
+			done = (len is 0)
+			@_checkQueueLen done, ++i, mods, cb
+
 	setupCallback: (mod) ->
+		checkRun = @checkRun
+		_completedInputs = @_completedInputs
 		debug 'Setting up callbacks'
 		_completeQueue = []
 		_nextQueue = []
 		_completeQueue.push (err, doc) ->
+			if @.type == 'input'
+				console.log 'input completed'
+				_completedInputs[mod.flowName] = _completedInputs[mod.flowName] + 1
+			checkRun mod.flowName
 			return mod.module.emit "error", err, doc, @ if err
 			debug 'Complete emitted by %s', mod.module?.config?.title
 			mod.module.emit "complete", doc, @
 
-		
 		_nextQueue.push (doc) ->
 			debug 'Next emitted by %s', mod.module?.config?.title
+			mod.next.queue.push doc if mod.next
 			mod.module.emit "next", doc, @
 		
 		for mw in @_mw
@@ -123,7 +151,7 @@ class Pipeliner extends events.EventEmitter
 			done() if done
 
 	_connectFlow: (mod, next) ->
-		mod.module.on 'next', (doc) ->
-			next.queue.push doc
+		#mod.module.on 'next', (doc) ->
+			
 
 module.exports = Pipeliner

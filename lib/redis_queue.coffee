@@ -5,6 +5,7 @@ Queue = require './queue'
 class RedisQueue extends Queue
 	# TODO: factory to set options like host, concurrency
 	constructor: (name) ->
+		@name = name
 		@rq = redisq.queue name
 		@concurrency = 1
 
@@ -22,5 +23,11 @@ class RedisQueue extends Queue
 	purge: ->
 		@rq.purge (err, res) =>
 			@emit 'purged' if res
+
+	length: (cb) ->
+		@rq.len (err, len) =>
+			console.log err if err
+			console.log 'redis q '+@name+' length: '+len
+			cb len
 
 module.exports = RedisQueue

@@ -22,4 +22,7 @@ class Queue extends events.EventEmitter
 		@_internalQueue = []
 		@emit 'purged'
 
+	length: (cb) ->
+		cb @_internalQueue.length
+
 module.exports = Queue
