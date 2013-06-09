@@ -16,25 +16,32 @@ class Pipeliner extends events.EventEmitter
 
 	createFlow: (name, tasks) ->
 		flow = @flows[name] = []
-		@_definedInputs[name] = @_definedInputs[name] || 0
-		@_completedInputs[name] = @_completedInputs[name] || 0
-		@_completes[name] = []
-		@_nexts[name] = []
-		@_indexes[name] = []
 		prev = null
 		i = 0
 		for task in tasks
 			queue = new @queue name + ':' + task.name
-			if task.module and (task.module.type == 'input' or (_.isFunction(task.module.type) and task.module.type() == 'input'))
-				@_definedInputs[name] += 1
-			@_indexes[name][task.name] = i
-			@_completes[name][i] = 0
-			@_nexts[name][i] = 0
 			task = _.extend({queue: queue, flowName: name}, task)
 			flow.push task
 			if prev
 				prev.next = task
 			prev = task
+			i++
+		@resetCounts name	
+
+	resetCounts: (name) ->
+		@_definedInputs[name] = @_definedInputs[name] || 0
+		@_completedInputs[name] = @_completedInputs[name] || 0
+		@_completes[name] = []
+		@_nexts[name] = []
+		@_indexes[name] = []
+		
+		i = 0
+		for task in @flows[name]
+			if task.module and (task.module.type == 'input' or (_.isFunction(task.module.type) and task.module.type() == 'input'))
+				@_definedInputs[name] += 1
+			@_indexes[name][task.name] = i
+			@_completes[name][i] = 0
+			@_nexts[name][i] = 0
 			i++
 
 	getFlows: () ->
@@ -70,8 +77,9 @@ class Pipeliner extends events.EventEmitter
 			break if not done or not @_completes[flowName][i]?
 			break if @_nexts[flowName][i-1] == 0
 			done = @_completes[flowName][i] >= @_nexts[flowName][i-1]
-
-		@emit 'end' if done
+		if done
+			@resetCounts flowName
+			@emit 'end' 
 
 	setupCallback: (mod) ->
 		checkRun = @checkRun
@@ -138,6 +146,9 @@ class Pipeliner extends events.EventEmitter
 			cb.apply mod.module, arguments	
 
 		return (doc, done) =>			
+			if done
+				_completeQueue.push (err, doc) ->
+					done()
 			debug 'Processing %s', mod.module?.config?.title
 			switch mod.module.process.length
 				when 0
@@ -153,8 +164,6 @@ class Pipeliner extends events.EventEmitter
 					complete.call mod.module
 				when 3
 					mod.module.process.call mod.module, doc, next, complete			
-
-			done() if done
 
 	_connectFlow: (mod, next) ->
 		mod.module.on 'next', (doc) ->
