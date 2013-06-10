@@ -79,7 +79,7 @@ class Pipeliner extends events.EventEmitter
 			done = @_completes[flowName][i] >= @_nexts[flowName][i-1]
 		if done
 			@resetCounts flowName
-			@emit 'end' 
+			@emit 'end', flowName
 
 	setupCallback: (mod) ->
 		checkRun = @checkRun
