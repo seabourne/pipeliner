@@ -53,6 +53,7 @@ class Pipeliner extends events.EventEmitter
 	trigger: (flowName, document) ->
 		if not @flows[flowName]
 			throw new ReferenceError "Flow " + flowName + " is not defined."
+		@emit 'start', flowName, document
 		@flows[flowName][0].queue.push(document)
 
 	purge: (flowName) ->
@@ -78,9 +79,9 @@ class Pipeliner extends events.EventEmitter
 			break if @_nexts[flowName][i-1] == 0
 			done = @_completes[flowName][i] >= @_nexts[flowName][i-1]
 		if done
-			@resetCounts flowName
 			@emit 'end', flowName
-
+			@resetCounts flowName
+			
 	setupCallback: (mod) ->
 		checkRun = @checkRun
 		_completedInputs = @_completedInputs
